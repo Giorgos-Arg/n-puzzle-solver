@@ -1,32 +1,40 @@
 import java.util.Iterator;
+import java.util.Stack;
 
 /**
- * A search nodes contains a state of the n-puzzle game. That is the board, the
+ * This class represents the state of the n-puzzle game. That is the board, the
  * moves made so far, the priority function value, the previous state and the
- * move made to reach that state.
+ * last move made to reach that state.
  * 
  * @author Giorgos Argyrides
  *
  */
 public class State implements Comparable<State> {
-	Board board;
-	int moveCount; // moves made so far
-	int priorityFunctionValue; // priority function value
-	int heuristicValue; // heuristic
-	String move;
-	State previous;
 
-	public State(Board board, int moveCount, State previous, String heuristic, String move) {
+	private Board board;
+	private int moveCount;
+	private int priorityFunctionValue;
+	private int heuristicValue;
+	private Move move;
+	private State previous;
+
+	public State(Board board, int moveCount, State previous, String heuristic, Move move) {
 		this.board = board;
 		this.moveCount = moveCount;
 		this.previous = previous;
-		calculatePriorityFunction(heuristic);
 		this.move = move;
+		calculatePriorityFunction(heuristic);
 	}
 
-	/**
-	 * @return true if the state is a goal state
-	 */
+	public Board getBoard() {
+		return this.board;
+	}
+
+	public Move getMove() {
+		return this.move;
+	}
+
+	// returns true if the state is a goal state
 	public boolean isGoal() {
 		int n = board.getN(), num = 1;
 		for (int i = 0; i < n; i++) {
@@ -41,10 +49,8 @@ public class State implements Comparable<State> {
 		return true;
 	}
 
-	/**
-	 * @return true if the two nodes are in the same state.
-	 */
-	public boolean equals(State sn) {
+	// returns true if the two states have the same board;
+	public boolean hasSameBoard(State sn) {
 		for (int i = 0; i < board.getN(); i++) {
 			for (int j = 0; j < board.getN(); j++) {
 				if (board.getTile(i, j) != sn.board.getTile(i, j))
@@ -54,12 +60,7 @@ public class State implements Comparable<State> {
 		return true;
 	}
 
-	/**
-	 * Calculates the priority function value by using one of four available
-	 * heuristics.
-	 * 
-	 * @param heuristic the heuristic used to calculate the priority function value.
-	 */
+	// Calculates the priority function value by using one of four available
 	public void calculatePriorityFunction(String heuristic) {
 		if (heuristic.equals("Manhattan")) {
 			heuristicValue = Heuristics.Manhattan(this);
@@ -73,9 +74,88 @@ public class State implements Comparable<State> {
 		priorityFunctionValue = moveCount + heuristicValue;
 	}
 
+	// Expands a state and adds its successors in the fringe.
+	public void expandState(Fringe fringe, Closed closed, String heuristic) {
+		Board b = this.board.moveBlank(Move.UP);
+		if (b != null) {
+			State state = new State(b, ++this.moveCount, this, heuristic, Move.UP);
+			if (avoidRepetition(state, fringe, closed)) {
+				fringe.add(state);
+				fringe.increaseStatesCount();
+			}
+		}
+		b = this.board.moveBlank(Move.DOWN);
+		if (b != null) {
+			State state = new State(b, ++this.moveCount, this, heuristic, Move.DOWN);
+			if (avoidRepetition(state, fringe, closed)) {
+				fringe.add(state);
+				fringe.increaseStatesCount();
+			}
+		}
+		b = this.board.moveBlank(Move.LEFT);
+		if (b != null) {
+			State state = new State(b, ++this.moveCount, this, heuristic, Move.LEFT);
+			if (avoidRepetition(state, fringe, closed)) {
+				fringe.add(state);
+				fringe.increaseStatesCount();
+			}
+		}
+		b = this.board.moveBlank(Move.RIGHT);
+		if (b != null) {
+			State state = new State(b, ++this.moveCount, this, heuristic, Move.RIGHT);
+			if (avoidRepetition(state, fringe, closed)) {
+				fringe.add(state);
+				fringe.increaseStatesCount();
+			}
+		}
+	}
+
 	/**
-	 * Compares two nodes by their priority function value.
+	 * Checks if the state has already been expanded and if yes, it discards it. If
+	 * the state is already in the fringe, then it keeps the state with the minimum
+	 * priority function value. Returns true if there is no repetition.
 	 */
+	public boolean avoidRepetition(State s2, Fringe fringe, Closed closed) {
+		State s1;
+		// if the state is already in the closed list return false
+		for (int i = 0; i < closed.size(); i++) {
+			s1 = closed.get(i);
+			if (s1.hasSameBoard(s2))
+				return false;
+		}
+		Iterator<State> it = fringe.iterator();
+		while (it.hasNext()) {
+			s1 = it.next();
+			if (s1.hasSameBoard(s2)) {
+				// keep the state with the minimum priorityFunctionValue
+				if (s2.priorityFunctionValue < s1.priorityFunctionValue) {
+					s1.priorityFunctionValue = s2.priorityFunctionValue;
+					s1.moveCount = s2.moveCount;
+					s1.heuristicValue = s2.heuristicValue;
+					s1.move = s2.move;
+					s1.previous = s2.previous;
+				}
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Takes the final state of a solution and goes backwards adding every state in
+	 * a stack in order to find the solution sequence.
+	 */
+	public Stack<State> findSolutionSequence() {
+		Stack<State> stack = new Stack<State>();
+		State s = this;
+		while (s != null) {
+			stack.add(s);
+			s = s.previous;
+		}
+		return stack;
+	}
+
+	// Compares two nodes by their priority function value.
 	public int compareTo(State sn) {
 		if (priorityFunctionValue < sn.priorityFunctionValue)
 			return -1;
@@ -83,76 +163,5 @@ public class State implements Comparable<State> {
 			return 1;
 		else
 			return 0;
-	}
-
-	/**
-	 * Expands a state and finds it's successors
-	 */
-	public void successors(FringeClosed fc, String heuristic) {
-		Board b1 = this.board.moveBlank("up");
-		if (b1 != null) {
-			State state = new State(b1, ++this.moveCount, this, heuristic, "up");
-			if (avoidRepetition(state, fc)) {
-				fc.fringe.add(state);
-				fc.states++;
-			}
-		}
-		Board b2 = this.board.moveBlank("down");
-		if (b2 != null) {
-			State state = new State(b2, ++this.moveCount, this, heuristic, "down");
-			if (avoidRepetition(state, fc)) {
-				fc.fringe.add(state);
-				fc.states++;
-			}
-		}
-		Board b3 = this.board.moveBlank("left");
-		if (b3 != null) {
-			State state = new State(b3, ++this.moveCount, this, heuristic, "left");
-			if (avoidRepetition(state, fc)) {
-				fc.fringe.add(state);
-				fc.states++;
-			}
-		}
-		Board b4 = this.board.moveBlank("right");
-		if (b4 != null) {
-			State state = new State(b4, ++this.moveCount, this, heuristic, "right");
-			if (avoidRepetition(state, fc)) {
-				fc.fringe.add(state);
-				fc.states++;
-			}
-		}
-	}
-
-	/**
-	 * Checks if the state has already been expanded and discards it. If the state
-	 * is in the fringe, then it keeps the state with the minimum priority function
-	 * value.
-	 * 
-	 * @return returns true if there is no repetition
-	 */
-	public boolean avoidRepetition(State sn, FringeClosed fc) {
-		State temp;
-		// if the state is already in the closed list return false
-		for (int i = 0; i < fc.closed.size(); i++) {
-			temp = fc.closed.get(i);
-			if (temp.equals(sn))
-				return false;
-		}
-		Iterator<State> it = fc.fringe.iterator();
-		while (it.hasNext()) {
-			temp = it.next();
-			if (temp.equals(sn)) {
-				// keep the state with the minimum priorityFunctionValue
-				if (sn.priorityFunctionValue < temp.priorityFunctionValue) {
-					temp.priorityFunctionValue = sn.priorityFunctionValue;
-					temp.moveCount = sn.moveCount;
-					temp.heuristicValue = sn.heuristicValue;
-					temp.move = sn.move;
-					temp.previous = sn.previous;
-				}
-				return false;
-			}
-		}
-		return true;
 	}
 }

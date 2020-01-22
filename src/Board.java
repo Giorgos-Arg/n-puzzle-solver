@@ -1,26 +1,19 @@
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.util.Objects;
 import java.util.Scanner;
 
 /**
  * This class represents the board of the n-puzzle game. The board is a n x n
- * 2-dimensional array of integers.
+ * array of integers.
  * 
  * @author Giorgos Argyrides
- *
  */
 public class Board {
-
 	private int n;
 	private int[][] array;
 
-	/**
-	 * Reads the given file and initializes the board.
-	 * @param n
-	 * @param filePath
-	 */
-	public Board(String filePath) {		
+	// Reads the given file and initializes the board.
+	public Board(String filePath) {
 		Scanner scan;
 		try {
 			scan = new Scanner(new FileInputStream(filePath));
@@ -33,10 +26,12 @@ public class Board {
 			}
 			scan.close();
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			System.out.println("\nFile \"" + filePath + "\" not found!\nProgram will terminate...");
+			System.exit(0);
 		}
 	}
 
+	// creates an n x n board
 	public Board(int n) {
 		this.n = n;
 		this.array = new int[n][n];
@@ -46,26 +41,12 @@ public class Board {
 		return this.n;
 	}
 
+	// returns the tile at the coordinates i, j
 	public int getTile(int i, int j) {
 		return this.array[i][j];
 	}
 
-	@Override
-	public boolean equals(Object o) {
-		if (o == this)
-			return true;
-		if (!(o instanceof Board)) {
-			return false;
-		}
-		Board board = (Board) o;
-		return n == board.n && Objects.equals(array, board.array);
-	}
-
-	/**
-	 * Checks if the board is solvable.
-	 * 
-	 * @return returns true if the board is solvable.
-	 */
+	// returns true if the board is solvable.
 	public boolean isSolvable() {
 		int[] temp = new int[n * n];
 		int k = 0, inversions = 0;
@@ -81,22 +62,16 @@ public class Board {
 			}
 		}
 		if (this.n % 2 == 0) {
-
 			int[] pos = this.findCoordinates(0);
 			int blankRow = pos[0];
 			if (((inversions + blankRow) % 2) == 0)
 				return false;
-		} else {
-
-			if (inversions % 2 != 0)
-				return false;
+		} else if (inversions % 2 != 0) {
+			return false;
 		}
 		return true;
 	}
 
-	/**
-	 * Prints the board.
-	 */
 	public void printBoard() {
 		for (int i = 0; i < n; i++) {
 			System.out.print("+");
@@ -119,11 +94,6 @@ public class Board {
 		System.out.println();
 	}
 
-	/**
-	 * Duplicates a board.
-	 * 
-	 * @return the duplicate of the board.
-	 */
 	public Board duplicate() {
 		Board b = new Board(n);
 		b.n = n;
@@ -136,10 +106,8 @@ public class Board {
 	}
 
 	/**
-	 * Finds the coordinates of the the given number in the board and stores them in
-	 * an array pos[]. pos[0] is X and pos[1] is Y.
-	 * 
-	 * @return returns coordinates of the given number in an array.
+	 * Finds the coordinates of the the given tile in the board and stores them in
+	 * an array pos[]. pos[0] is x and pos[1] is y
 	 */
 	public int[] findCoordinates(int tile) {
 		int[] pos = new int[2];
@@ -154,41 +122,37 @@ public class Board {
 		return pos;
 	}
 
-	/**
-	 * Moves the blank (0) block up, down, left or right.
-	 * 
-	 * @return the board with the moved blank tile.
-	 */
-	public Board moveBlank(String position) {
+	// Moves the blank tile (0) up, down, left or right and returns the new board
+	public Board moveBlank(Move move) {
 		Board b = this.duplicate();
 		int[] pos = this.findCoordinates(0); // find blank tile coordinates
 		int x = pos[0], y = pos[1];
-
-		switch (position) {
-		case "up":
+		switch (move) {
+		case UP:
 			if (x == 0)
 				return null;
 			b.array[x][y] = array[x - 1][y];
 			b.array[x - 1][y] = 0;
 			break;
-		case "down":
+		case DOWN:
 			if (x == n - 1)
 				return null;
 			b.array[x][y] = array[x + 1][y];
 			b.array[x + 1][y] = 0;
 			break;
-		case "left":
+		case LEFT:
 			if (y == 0)
 				return null;
 			b.array[x][y] = array[x][y - 1];
 			b.array[x][y - 1] = 0;
 			break;
-		case "right":
+		case RIGHT:
 			if (y == n - 1)
 				return null;
 			b.array[x][y] = array[x][y + 1];
 			b.array[x][y + 1] = 0;
 			break;
+		default:
 		}
 		return b;
 	}

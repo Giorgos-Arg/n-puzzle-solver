@@ -1,7 +1,7 @@
 import static java.util.Arrays.binarySearch;
 
 /**
- * The n-puzzle can be solved using 4 different heuristics according to the
+ * The n-puzzle can be solved using four different heuristics according to the
  * user's choice.
  * 
  * @author Giorgos Argyrides
@@ -13,15 +13,14 @@ public class Heuristics {
 		ROW, COL
 	};
 
-	/**
-	 * Calculates the manhattan distance of all the tiles.
-	 */
+	// Calculates the manhattan distance of all the tiles.
 	public static int Manhattan(State state) {
 		int sum = 0, tile = 1;
-		for (int i = 0; i < state.board.getN(); i++) {
-			for (int j = 0; j < state.board.getN(); j++) {
-				if ((state.board.getTile(i, j) != 0) && (state.board.getTile(i, j) != tile)) {// Misplaced tile
-					int[] pos = state.board.findCoordinates(tile);
+		for (int i = 0; i < state.getBoard().getN(); i++) {
+			for (int j = 0; j < state.getBoard().getN(); j++) {
+				if ((state.getBoard().getTile(i, j) != 0) && (state.getBoard().getTile(i, j) != tile)) {// Misplaced
+																										// tile
+					int[] pos = state.getBoard().findCoordinates(tile);
 					sum += Math.abs(pos[0] - i) + Math.abs(pos[1] - j);
 				}
 				tile++;
@@ -30,14 +29,12 @@ public class Heuristics {
 		return sum;
 	}
 
-	/**
-	 * Counts the number of tiles that are not in their correct position.
-	 */
+	// Counts the number of tiles that are not in their correct position.
 	public static int misplacedTiles(State state) {
-		int tile = 1, misplaced = 0, n = state.board.getN();
+		int tile = 1, misplaced = 0, n = state.getBoard().getN();
 		for (int i = 0; i < n; i++) {
 			for (int j = 0; j < n; j++) {
-				if ((state.board.getTile(i, j) != 0) && (state.board.getTile(i, j) != tile))
+				if ((state.getBoard().getTile(i, j) != 0) && (state.getBoard().getTile(i, j) != tile))
 					misplaced++;
 				tile++;
 			}
@@ -45,15 +42,14 @@ public class Heuristics {
 		return misplaced;
 	}
 
-	/**
-	 * Counts the number of tiles that are out of their correct row or column.
-	 */
+	// Counts the number of tiles that are out of their correct row or column.
 	public static int tilesOutOfRowOrColumn(State state) {
 		int outOfRow = 0, outOfColumn = 0, tile = 1;
-		for (int i = 0; i < state.board.getN(); i++) {
-			for (int j = 0; j < state.board.getN(); j++) {
-				if ((state.board.getTile(i, j) != 0) && (state.board.getTile(i, j) != tile)) {// Misplaced tile
-					int[] pos = state.board.findCoordinates(tile);
+		for (int i = 0; i < state.getBoard().getN(); i++) {
+			for (int j = 0; j < state.getBoard().getN(); j++) {
+				if ((state.getBoard().getTile(i, j) != 0) && (state.getBoard().getTile(i, j) != tile)) {// Misplaced
+																										// tile
+					int[] pos = state.getBoard().findCoordinates(tile);
 					if (pos[0] - i != 0)
 						outOfRow++;
 					if (pos[1] - j != 0)
@@ -68,20 +64,18 @@ public class Heuristics {
 	/**
 	 * Auxiliary method for the linear conflict heuristic. Returns the tiles of the
 	 * puzzle for a specified row or column.
-	 *
-	 * @param index the row or column number
 	 */
 	private static int[] tuple(Axis axis, int index, State state) {
-		int n = state.board.getN();
-		int[] result = new int[state.board.getN()];
+		int n = state.getBoard().getN();
+		int[] result = new int[state.getBoard().getN()];
 		if (axis.equals(Axis.ROW)) {
 			for (int i = 0; i < n; i++) {
-				result[i] = state.board.getTile(index, i);
+				result[i] = state.getBoard().getTile(index, i);
 			}
 		} else {
 			for (int i = 0; i < n; i++)
 				for (int j = index; j < n * n; j += n)
-					result[i] =  state.board.getTile(i, index);
+					result[i] = state.getBoard().getTile(i, index);
 		}
 		return result;
 	}
@@ -90,11 +84,9 @@ public class Heuristics {
 	 * Auxiliary method for the linear conflict heuristic. Returns the squares of
 	 * the puzzle of this size as if it were in its solved state for a specified row
 	 * or column.
-	 *
-	 * @param index the row or column number
 	 */
 	private static int[] idealTuple(Axis axis, int index, State state) {
-		int boardN = state.board.getN();
+		int boardN = state.getBoard().getN();
 		int[] result = new int[boardN];
 		int[][] ideal = new int[boardN][boardN];
 		int num = 1;
@@ -124,7 +116,7 @@ public class Heuristics {
 		int[] current = tuple(axis, index, state);
 		int[] ideal = idealTuple(axis, index, state);
 		int inversions = 0;
-		for (int i = 1; i < state.board.getN(); i++) {
+		for (int i = 1; i < state.getBoard().getN(); i++) {
 			if ((current[i] != 0) && (0 <= binarySearch(ideal, current[i]))) {
 				for (int j = 0; j < i; j++) {
 					if ((current[j] != 0) && (0 <= binarySearch(ideal, current[j]))) {
@@ -139,18 +131,16 @@ public class Heuristics {
 	}
 
 	/**
-	 * For each pair of tiles, if both numbers are supposed to be in this row or
-	 * column , and neither is blank they are inverted there is a linear conflict.
-	 * 
-	 * @return returns the number of linear conflicts in the state.
+	 * Returns the number of linear conflicts in the state. For each pair of tiles,
+	 * if both numbers are supposed to be in this row or column , and neither is
+	 * blank and they are inverted there is a linear conflict.
 	 */
 	public static int linearConflict(State state) {
 		int linearConflict = 0;
-		for (int i = 0; i < state.board.getN(); i++) {
+		for (int i = 0; i < state.getBoard().getN(); i++) {
 			linearConflict += inversions(Axis.ROW, i, state);
 			linearConflict += inversions(Axis.COL, i, state);
 		}
 		return linearConflict;
-
 	}
 }
