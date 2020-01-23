@@ -174,4 +174,4 @@ Total solution time: 0.004 seconds
 
 ## Author
 
-Giorgos Argyrides (g.aryrides@outlook)
+Giorgos Argyrides (g.aryrides@outlook.com)
